@@ -159,9 +159,15 @@ public:
 
     locked_resource_view_t<Collection> get_collection_with_id(uint32_t collection_id) const;
 
+    Option<Collection*> get_collection_with_id_unsafe(const uint32_t& collection_id);
+
     nlohmann::json get_collection_summaries() const;
 
     Option<nlohmann::json> drop_collection(const std::string& collection_name, const bool remove_from_store = true);
+
+    static Option<raw_search_args*> get_raw_search_args(std::map<std::string, std::string>& req_params, nlohmann::json& embedded_params);
+
+    Option<nlohmann::json> search_multiple_collections(std::vector<std::map<std::string, std::string>>& req_params, std::vector<nlohmann::json>& embedded_params_vec);
 
     uint32_t get_next_collection_id() const;
 
@@ -177,7 +183,8 @@ public:
 
     static Option<bool> do_search(std::map<std::string, std::string>& req_params,
                                   nlohmann::json& embedded_params,
-                                  std::string& results_json_str);
+                                  std::string& results_json_str,
+                                  const bool aggreagte_from_multiple_collectinos = false);
 
     static bool parse_sort_by_str(std::string sort_by_str, std::vector<sort_by>& sort_fields);
 

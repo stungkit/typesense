@@ -38,6 +38,67 @@ struct highlight_field_t {
     }
 };
 
+
+struct collection_highlight_vars_t {
+    std::vector<highlight_field_t> highlight_items;
+    bool has_atleast_one_fully_highlighted_field = false;
+    bool has_highlights = false;
+    std::vector<std::string> highlight_field_names;
+    std::vector<std::string> highlight_full_field_names;
+    tsl::htrie_set<char> include_fields_full;
+    tsl::htrie_set<char> exclude_fields_full;
+    uint8_t index_symbols[256];
+};
+
+
+struct raw_search_args {
+    std::string query;
+    std::vector<std::string> search_fields;
+    std::string simple_filter_query;
+    std::vector<std::string> facet_fields;
+    std::vector<sort_by> sort_fields;
+    std::vector<uint32_t> num_typos;
+    size_t per_page = 10;
+    size_t page = 1;
+    token_ordering token_order = FREQUENCY;
+    const std::vector<bool> prefixes =  {true};
+    size_t drop_tokens_threshold = Index::DROP_TOKENS_THRESHOLD;
+    const spp::sparse_hash_set<std::string>include_fields;
+    const spp::sparse_hash_set<std::string> exclude_fields;
+    size_t max_facet_values=10;
+    const std::string simple_facet_query;
+    const size_t snippet_threshold = 30;
+    const size_t highlight_affix_num_tokens = 4;
+    const std::string highlight_full_fields;
+    size_t typo_tokens_threshold = Index::TYPO_TOKENS_THRESHOLD;
+    const std::string pinned_hits_str;
+    const std::string hidden_hits;
+    const std::vector<std::string> group_by_fields;
+    size_t group_limit = 3;
+    const std::string highlight_start_tag = "<mark>";
+    const std::string highlight_end_tag = "</mark>";
+    std::vector<uint32_t> query_by_weights={};
+    size_t limit_hits=UINT32_MAX;
+    bool prioritize_exact_match=true;
+    bool pre_segmented_query=false;
+    bool enable_overrides=true;
+    const std::string highlight_fields;
+    const bool exhaustive_search = false;
+    size_t search_stop_millis = 6000*1000;
+    size_t min_len_1typo = 4;
+    size_t min_len_2typo = 7;
+    enable_t split_join_tokens = fallback;
+    size_t max_candidates = 4;
+    const std::vector<enable_t> infixes = {off};
+    const size_t max_extra_prefix = INT16_MAX;
+    const size_t max_extra_suffix = INT16_MAX;
+    const size_t facet_query_num_typos = 2;
+    const size_t filter_curated_hits_option = 2;
+    const bool prioritize_token_position = false;
+    const std::string vector_query_str;
+
+};
+
 class Collection {
 private:
 
@@ -45,7 +106,7 @@ private:
 
     const uint8_t CURATED_RECORD_IDENTIFIER = 100;
 
-    const size_t DEFAULT_TOPSTER_SIZE = 250;
+    static constexpr size_t DEFAULT_TOPSTER_SIZE = 250;
 
     struct highlight_t {
         size_t field_index;
@@ -231,11 +292,6 @@ private:
                                const std::string& highlight_start_tag, const std::string& highlight_end_tag,
                                const uint8_t* index_symbols, const match_index_t& match_index) const;
 
-    static Option<bool> extract_field_name(const std::string& field_name,
-                                           const tsl::htrie_map<char, field>& search_schema,
-                                           std::vector<std::string>& processed_search_fields,
-                                           bool extract_only_string_fields,
-                                           bool enable_nested_fields);
 
     static Option<bool> flatten_and_identify_new_fields(nlohmann::json& doc, const std::vector<field>& nested_fields_found,
                                                          const tsl::htrie_map<char, field>& schema,
@@ -348,8 +404,10 @@ public:
 
     const Index* _get_index() const;
 
+    const tsl::htrie_map<char, field>& _get_schema() const;
+
     bool facet_value_to_string(const facet &a_facet, const facet_count_t &facet_count, const nlohmann::json &document,
-                               std::string &value) const;
+                               std::string &value, const tsl::htrie_map<char, field>& search_schema) const;
 
     static void populate_result_kvs(Topster *topster, std::vector<std::vector<KV *>> &result_kvs);
 
@@ -362,6 +420,13 @@ public:
                             std::vector<std::vector<std::string>>& q_exclude_tokens,
                             std::vector<std::vector<std::string>>& q_phrases,
                             const std::string& locale, const bool already_segmented) const;
+
+    static Option<bool> extract_field_name(const std::string& field_name,
+                                        const tsl::htrie_map<char, field>& search_schema,
+                                        std::vector<std::string>& processed_search_fields,
+                                        bool extract_only_string_fields,
+                                        bool enable_nested_fields);
+    
 
     // PUBLIC OPERATIONS
 
@@ -416,7 +481,56 @@ public:
                                   const size_t facet_query_num_typos = 2,
                                   const size_t filter_curated_hits_option = 2,
                                   const bool prioritize_token_position = false,
-                                  const std::string& vector_query_str = "") const;
+                                  const std::string& vector_query_str = "");
+
+    Option<nlohmann::json> search(raw_search_args* args);
+
+    Option<search_args*> get_search_args(const std::string & query, const std::vector<std::string> & search_fields,
+                                  const std::string & simple_filter_query, const std::vector<std::string> & facet_fields,
+                                  const std::vector<sort_by> & sort_fields, const std::vector<uint32_t>& num_typos,
+                                  size_t per_page = 10, size_t page = 1,
+                                  token_ordering token_order = FREQUENCY, const std::vector<bool>& prefixes = {true},
+                                  size_t drop_tokens_threshold = Index::DROP_TOKENS_THRESHOLD,
+                                  const spp::sparse_hash_set<std::string> & include_fields = spp::sparse_hash_set<std::string>(),
+                                  const spp::sparse_hash_set<std::string> & exclude_fields = spp::sparse_hash_set<std::string>(),
+                                  size_t max_facet_values=10,
+                                  const std::string & simple_facet_query = "",
+                                  const size_t snippet_threshold = 30,
+                                  const size_t highlight_affix_num_tokens = 4,
+                                  const std::string & highlight_full_fields = "",
+                                  size_t typo_tokens_threshold = Index::TYPO_TOKENS_THRESHOLD,
+                                  const std::string& pinned_hits_str="",
+                                  const std::string& hidden_hits="",
+                                  const std::vector<std::string>& group_by_fields={},
+                                  size_t group_limit = 3,
+                                  const std::string& highlight_start_tag="<mark>",
+                                  const std::string& highlight_end_tag="</mark>",
+                                  std::vector<uint32_t> raw_query_by_weights={},
+                                  size_t limit_hits=UINT32_MAX,
+                                  bool prioritize_exact_match=true,
+                                  bool pre_segmented_query=false,
+                                  bool enable_overrides=true,
+                                  const std::string& highlight_fields="",
+                                  const bool exhaustive_search = false,
+                                  size_t search_stop_millis = 6000*1000,
+                                  size_t min_len_1typo = 4,
+                                  size_t min_len_2typo = 7,
+                                  enable_t split_join_tokens = fallback,
+                                  size_t max_candidates = 4,
+                                  const std::vector<enable_t>& infixes = {off},
+                                  const size_t max_extra_prefix = INT16_MAX,
+                                  const size_t max_extra_suffix = INT16_MAX,
+                                  const size_t facet_query_num_typos = 2,
+                                  const size_t filter_curated_hits_option = 2,
+                                  const bool prioritize_token_position = false,
+                                  const std::string& vector_query_str = "");
+                                  
+    Option<nlohmann::json> get_result(raw_search_args& common_args, search_args* search_params, std::vector<CollectionKVGroup>& collection_kvs, 
+                                    std::unordered_map<uint32_t, Collection*> collection_map = {},
+                                    std::vector<collection_highlight_vars_t> collection_highlight_vars_vec = {},
+                                    const std::vector<std::pair<raw_search_args*, search_args*>>& search_args_vec = {});
+
+    Option<bool> run_search(search_args* search_params,std::vector<CollectionKVGroup>& collection_kvs);
 
     Option<bool> get_filter_ids(const std::string & simple_filter_query,
                                 std::vector<std::pair<size_t, uint32_t*>>& index_ids);
@@ -483,7 +597,8 @@ public:
                                   const std::vector<enable_t>& infixes,
                                   std::vector<std::string>& q_tokens,
                                   const tsl::htrie_map<char, token_leaf>& qtoken_set,
-                                  std::vector<highlight_field_t>& highlight_items) const;
+                                  std::vector<highlight_field_t>& highlight_items, const Index* index,
+                                  const tsl::htrie_map<char, field>& search_schema, const bool enable_nested_fields) const;
 
     static void copy_highlight_doc(std::vector<highlight_field_t>& hightlight_items, const nlohmann::json& src,
                                    nlohmann::json& dst);
