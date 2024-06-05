@@ -21,6 +21,7 @@ This is a selection of sites and apps using Typesense.
 | [DiscMaster](http://discmaster.textfiles.com/search) | Search 94 million vintage computer files from archive.org |
 | [Echidna Sewing](https://www.echidnasewing.com.au) | Echidna Sewing is one of Australia’s largest sewing machine dealers |
 | [ElbiseBul](https://www.elbisebul.com/) | E-commerce |
+| [ESF Meribel](https://www.esf-meribel.com/) | Ski resort E-commerce |
 | [FlyGRN](https://flygrn.com) | Flight Ticket Search Engine that ranks flights on carbon emissions and gives greener alternatives |
 | [furn.nl](https://furn.nl) | Dutch furniture comparison website |
 | [GlobalTill](https://www.globaltill.com) | Omnichannel Retail Management System |
@@ -42,6 +43,7 @@ This is a selection of sites and apps using Typesense.
 | [OpenTacos](https://tacos.openbeta.io) | Free and open source rock climbing route wiki |
 | [Orders Made Simple](https://ordersmadesimple.com) | A Stock ordering platform helping to connect hospitality and catering venues with their suppliers |
 | [Otaku Square](https://www.otakusquare.com) | Online retailer for pop-culture (e.g. anime, games, movies) merchandise |
+| [OverSoul](https://apps.apple.com/us/app/oversoul/id6475262918) | Spatial photo converting and sharing app on Apple Vision |
 | [Plaza](https://www.useplaza.com) | Live-shopping platform |
 | [Popcorn](https://onpopcorn.com) | Zoom meets Snapchat, async video chat app |
 | [Project Seldon](https://projectseldon.org) | A free and unbiased analysis platform for understanding societies and systems of government. |
